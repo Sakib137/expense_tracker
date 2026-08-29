@@ -62,8 +62,56 @@ class _ExpensesState extends State<Expenses> {
     });
   }
 
+  void _removeExpenses(Expense expense) {
+    final expenseIndex = _registeredExpenses.indexOf(expense);
+
+    setState(() {
+      _registeredExpenses.remove(expense);
+    });
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    scaffoldMessenger.clearSnackBars();
+
+    scaffoldMessenger.showSnackBar(
+      SnackBar(
+        content: const Text("Expense deleted"),
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(
+          label: "Undo",
+          onPressed: () {
+            setState(() {
+              _registeredExpenses.insert(expenseIndex, expense);
+            });
+          },
+        ),
+      ),
+    );
+
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        scaffoldMessenger.hideCurrentSnackBar();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    debugPrint(
+      'Accessible navigation: ${MediaQuery.of(context).accessibleNavigation}',
+    );
+
+    Widget mainContent = Center(
+      child: Text("No Expense found. Please start adding!"),
+    );
+
+    if (_registeredExpenses.isNotEmpty) {
+      mainContent = ExpenseList(
+        expenses: _registeredExpenses,
+        onRemoveExpense: _removeExpenses,
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text("Expense Tracker"),
@@ -74,7 +122,7 @@ class _ExpensesState extends State<Expenses> {
       body: Column(
         children: [
           Text("Expense chart"),
-          Expanded(child: ExpenseList(expenses: _registeredExpenses)),
+          Expanded(child: mainContent),
         ],
       ),
     );
