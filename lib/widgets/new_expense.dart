@@ -142,7 +142,7 @@ class _NewExpenseState extends State<NewExpense> {
                 },
               ),
               Spacer(),
-              ElevatedButton(
+              TextButton(
                 onPressed: () {
                   Navigator.pop(context);
                 },
