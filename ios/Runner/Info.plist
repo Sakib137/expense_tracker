@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Expense Tracker needs access to your photo library to select a custom profile avatar.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Expense Tracker needs access to your camera to take a photo for your profile avatar.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Expense Tracker needs access to your microphone if recording media.</string>
 </dict>
 </plist>

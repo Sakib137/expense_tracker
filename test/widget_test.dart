@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:expense_tracker/models/transaction_item.dart';
 import 'package:expense_tracker/models/category_item.dart';
 import 'package:expense_tracker/models/budget_item.dart';
+import 'package:expense_tracker/models/user_settings.dart';
 import 'package:expense_tracker/utils/currency_formatter.dart';
 import 'package:expense_tracker/state/app_state.dart';
 import 'package:expense_tracker/state/app_state_provider.dart';
@@ -60,6 +61,26 @@ void main() {
       expect(CurrencyFormatter.format(1234.56, symbol: '\$'), '\$1,234.56');
       expect(CurrencyFormatter.format(50.0, symbol: '€'), '€50.00');
       expect(CurrencyFormatter.formatPercent(0.354), '35.4%');
+    });
+
+    test('UserSettings serialization with profileImagePath', () {
+      const settings = UserSettings(
+        userName: 'Taylor',
+        currencySymbol: '€',
+        themeMode: ThemeMode.dark,
+        profileImagePath: '/path/to/profile.jpg',
+      );
+
+      final json = settings.toJson();
+      final restored = UserSettings.fromJson(json);
+
+      expect(restored.userName, 'Taylor');
+      expect(restored.currencySymbol, '€');
+      expect(restored.themeMode, ThemeMode.dark);
+      expect(restored.profileImagePath, '/path/to/profile.jpg');
+
+      final cleared = restored.copyWith(clearProfileImage: true);
+      expect(cleared.profileImagePath, isNull);
     });
 
     test('CategoryItem default categories presence', () {

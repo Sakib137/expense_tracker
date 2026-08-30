@@ -578,11 +578,15 @@ class AppState extends ChangeNotifier {
     String? currencySymbol,
     ThemeMode? themeMode,
     String? userName,
+    String? profileImagePath,
+    bool clearProfileImage = false,
   }) async {
     _settings = _settings.copyWith(
       currencySymbol: currencySymbol,
       themeMode: themeMode,
       userName: userName,
+      profileImagePath: profileImagePath,
+      clearProfileImage: clearProfileImage,
     );
     notifyListeners();
     await _repository.saveSettings(_settings);

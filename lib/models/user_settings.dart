@@ -4,22 +4,29 @@ class UserSettings {
   final String currencySymbol;
   final ThemeMode themeMode;
   final String userName;
+  final String? profileImagePath;
 
   const UserSettings({
     this.currencySymbol = '\$',
     this.themeMode = ThemeMode.system,
     this.userName = 'Alex',
+    this.profileImagePath,
   });
 
   UserSettings copyWith({
     String? currencySymbol,
     ThemeMode? themeMode,
     String? userName,
+    String? profileImagePath,
+    bool clearProfileImage = false,
   }) {
     return UserSettings(
       currencySymbol: currencySymbol ?? this.currencySymbol,
       themeMode: themeMode ?? this.themeMode,
       userName: userName ?? this.userName,
+      profileImagePath: clearProfileImage
+          ? null
+          : (profileImagePath ?? this.profileImagePath),
     );
   }
 
@@ -28,6 +35,7 @@ class UserSettings {
       'currencySymbol': currencySymbol,
       'themeMode': themeMode.name,
       'userName': userName,
+      'profileImagePath': profileImagePath,
     };
   }
 
@@ -43,6 +51,7 @@ class UserSettings {
       currencySymbol: json['currencySymbol'] as String? ?? '\$',
       themeMode: mode,
       userName: json['userName'] as String? ?? 'Alex',
+      profileImagePath: json['profileImagePath'] as String?,
     );
   }
 

@@ -12,6 +12,7 @@ import 'package:expense_tracker/widgets/budgets/set_budget_sheet.dart';
 import 'package:expense_tracker/widgets/common/section_header.dart';
 import 'package:expense_tracker/widgets/common/empty_state_view.dart';
 import 'package:expense_tracker/widgets/analytics/insights_list_view.dart';
+import 'package:expense_tracker/widgets/common/user_avatar.dart';
 import 'package:expense_tracker/theme/app_colors.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -128,27 +129,10 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: Row(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryDark],
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.account_balance_wallet_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
+            UserAvatar(
+              size: 40,
+              userName: appState.settings.userName,
+              imagePath: appState.settings.profileImagePath,
             ),
             const SizedBox(width: 12),
             Column(

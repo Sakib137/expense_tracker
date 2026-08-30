@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:expense_tracker/state/app_state.dart';
 import 'package:expense_tracker/state/app_state_provider.dart';
 import 'package:expense_tracker/models/user_settings.dart';
@@ -6,6 +7,7 @@ import 'package:expense_tracker/theme/app_colors.dart';
 import 'package:expense_tracker/widgets/categories/add_category_dialog.dart';
 import 'package:expense_tracker/widgets/common/custom_card.dart';
 import 'package:expense_tracker/widgets/common/section_header.dart';
+import 'package:expense_tracker/widgets/common/user_avatar.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -15,6 +17,141 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AddCategoryDialog(
         onSave: (cat) => appState.addCategory(cat),
+      ),
+    );
+  }
+
+  Future<void> _showProfileImageOptions(BuildContext context, AppState appState) async {
+    final theme = Theme.of(context);
+    final picker = ImagePicker();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Text(
+                  'Profile Photo',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.photo_library_rounded, color: AppColors.primary),
+                ),
+                title: const Text('Choose from Gallery'),
+                subtitle: const Text('Select a photo from your device'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  try {
+                    final XFile? image = await picker.pickImage(
+                      source: ImageSource.gallery,
+                      maxWidth: 600,
+                      maxHeight: 600,
+                      imageQuality: 85,
+                    );
+                    if (image != null) {
+                      await appState.updateUserSettings(profileImagePath: image.path);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      final isChannelError = e.toString().contains('channel-error') ||
+                          e.toString().contains('MissingPluginException');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isChannelError
+                                ? 'Please restart (re-run) the Flutter app once to enable device photo picker.'
+                                : 'Could not pick image: $e',
+                          ),
+                          backgroundColor: isChannelError ? AppColors.warning : null,
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.income.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.camera_alt_rounded, color: AppColors.income),
+                ),
+                title: const Text('Take a Photo'),
+                subtitle: const Text('Capture with device camera'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  try {
+                    final XFile? image = await picker.pickImage(
+                      source: ImageSource.camera,
+                      maxWidth: 600,
+                      maxHeight: 600,
+                      imageQuality: 85,
+                    );
+                    if (image != null) {
+                      await appState.updateUserSettings(profileImagePath: image.path);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      final isChannelError = e.toString().contains('channel-error') ||
+                          e.toString().contains('MissingPluginException');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            isChannelError
+                                ? 'Please restart (re-run) the Flutter app once to enable camera access.'
+                                : 'Could not open camera: $e',
+                          ),
+                          backgroundColor: isChannelError ? AppColors.warning : null,
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+              if (appState.settings.profileImagePath != null)
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.expense.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.delete_outline_rounded, color: AppColors.expense),
+                  ),
+                  title: const Text('Remove Photo', style: TextStyle(color: AppColors.expense)),
+                  subtitle: const Text('Reset to default initial avatar'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    await appState.updateUserSettings(clearProfileImage: true);
+                  },
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -101,27 +238,12 @@ class SettingsScreen extends StatelessWidget {
           CustomCard(
             child: Row(
               children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.primaryGradientEnd],
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      appState.settings.userName.isNotEmpty
-                          ? appState.settings.userName[0].toUpperCase()
-                          : 'A',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
+                UserAvatar(
+                  size: 58,
+                  userName: appState.settings.userName,
+                  imagePath: appState.settings.profileImagePath,
+                  showEditBadge: true,
+                  onTap: () => _showProfileImageOptions(context, appState),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -136,11 +258,18 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        'Personal Workspace',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      InkWell(
+                        onTap: () => _showProfileImageOptions(context, appState),
+                        borderRadius: BorderRadius.circular(4),
+                        child: Text(
+                          appState.settings.profileImagePath != null
+                              ? 'Change Profile Photo'
+                              : 'Tap avatar to add photo',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ],
