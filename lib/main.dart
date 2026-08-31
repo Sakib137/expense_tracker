@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:expense_tracker/state/app_state.dart';
 import 'package:expense_tracker/state/app_state_provider.dart';
 import 'package:expense_tracker/theme/app_theme.dart';
-import 'package:expense_tracker/screens/main_scaffold.dart';
+import 'package:expense_tracker/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +14,12 @@ void main() async {
 }
 
 class ExpenseTrackerApp extends StatelessWidget {
-  const ExpenseTrackerApp({super.key});
+  final Widget? initialScreen;
+
+  const ExpenseTrackerApp({
+    super.key,
+    this.initialScreen,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +31,8 @@ class ExpenseTrackerApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: appState.themeMode,
-      home: const MainScaffold(),
+      home: initialScreen ?? const SplashScreen(),
     );
   }
 }
+

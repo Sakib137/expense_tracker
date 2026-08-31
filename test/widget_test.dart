@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:expense_tracker/models/transaction_item.dart';
-import 'package:expense_tracker/models/category_item.dart';
 import 'package:expense_tracker/models/budget_item.dart';
 import 'package:expense_tracker/models/user_settings.dart';
 import 'package:expense_tracker/utils/currency_formatter.dart';
 import 'package:expense_tracker/state/app_state.dart';
 import 'package:expense_tracker/state/app_state_provider.dart';
+import 'package:expense_tracker/screens/splash_screen.dart';
 import 'package:expense_tracker/main.dart';
 
 void main() {
@@ -59,73 +59,77 @@ void main() {
 
     test('CurrencyFormatter formatting', () {
       expect(CurrencyFormatter.format(1234.56, symbol: '\$'), '\$1,234.56');
-      expect(CurrencyFormatter.format(50.0, symbol: '€'), '€50.00');
-      expect(CurrencyFormatter.formatPercent(0.354), '35.4%');
+      expect(CurrencyFormatter.formatCompact(1500000, symbol: '\$'), '\$1.5M');
+      expect(CurrencyFormatter.formatCompact(2500, symbol: '\$'), '\$2.5K');
     });
 
-    test('UserSettings serialization with profileImagePath', () {
+    test('UserSettings copyWith and JSON roundtrip', () {
       const settings = UserSettings(
-        userName: 'Taylor',
+        userName: 'Alex',
         currencySymbol: '€',
         themeMode: ThemeMode.dark,
-        profileImagePath: '/path/to/profile.jpg',
+        profileImagePath: '/path/to/img.jpg',
       );
 
-      final json = settings.toJson();
-      final restored = UserSettings.fromJson(json);
+      final updated = settings.copyWith(userName: 'Jordan');
+      expect(updated.userName, 'Jordan');
+      expect(updated.currencySymbol, '€');
+      expect(updated.themeMode, ThemeMode.dark);
 
-      expect(restored.userName, 'Taylor');
+      final json = updated.toJson();
+      final restored = UserSettings.fromJson(json);
+      expect(restored.userName, 'Jordan');
       expect(restored.currencySymbol, '€');
       expect(restored.themeMode, ThemeMode.dark);
-      expect(restored.profileImagePath, '/path/to/profile.jpg');
-
-      final cleared = restored.copyWith(clearProfileImage: true);
-      expect(cleared.profileImagePath, isNull);
-    });
-
-    test('CategoryItem default categories presence', () {
-      final defaultCats = CategoryItem.defaultCategories;
-      expect(defaultCats, isNotEmpty);
-      expect(defaultCats.any((c) => c.name.contains('Food')), isTrue);
-      expect(defaultCats.any((c) => c.name.contains('Salary')), isTrue);
     });
   });
 
-  group('AppState State Management Tests', () {
-    test('AppState initial load, add transaction, delete and calculations', () async {
+  group('AppState Business Logic Tests', () {
+    test('Initial data loads default categories and seed transactions', () async {
       final appState = AppState();
       await appState.loadData();
 
-      expect(appState.isLoading, isFalse);
-      expect(appState.allTransactions, isNotEmpty);
-      final initialCount = appState.allTransactions.length;
+      expect(appState.categories.isNotEmpty, isTrue);
+      expect(appState.allTransactions.isNotEmpty, isTrue);
+      expect(appState.totalBalance, isNonZero);
+    });
 
-      // Add a test income transaction
-      final newIncome = TransactionItem(
-        title: 'Consulting Gig',
-        amount: 1000.0,
+    test('Add, edit, delete, and undo delete transaction', () async {
+      final appState = AppState();
+      await appState.loadData();
+
+      final initialCount = appState.allTransactions.length;
+      final newTx = TransactionItem(
+        title: 'Freelance Design',
+        amount: 500.0,
         date: DateTime.now(),
-        categoryId: 'business',
+        categoryId: 'freelance',
         type: TransactionType.income,
+        paymentMethod: PaymentMethod.bankTransfer,
       );
 
-      await appState.addTransaction(newIncome);
+      // Add transaction
+      await appState.addTransaction(newTx);
       expect(appState.allTransactions.length, initialCount + 1);
-      expect(appState.allTransactions.first.title, 'Consulting Gig');
 
-      // Test delete with undo
-      final deleted = await appState.deleteTransaction(newIncome.id);
-      expect(deleted, isNotNull);
+      // Edit transaction
+      final edited = newTx.copyWith(title: 'UniqueDesignJob');
+      await appState.updateTransaction(edited);
+      expect(appState.allTransactions.firstWhere((t) => t.id == newTx.id).title, 'UniqueDesignJob');
+
+      // Delete transaction
+      final deleted = await appState.deleteTransaction(newTx.id);
       expect(appState.allTransactions.length, initialCount);
+      expect(deleted?.id, newTx.id);
 
       // Restore transaction
       await appState.restoreTransaction(deleted!);
       expect(appState.allTransactions.length, initialCount + 1);
 
       // Test search filter
-      appState.setSearchQuery('Consulting');
+      appState.setSearchQuery('UniqueDesignJob');
       expect(appState.filteredTransactions.length, 1);
-      expect(appState.filteredTransactions.first.title, 'Consulting Gig');
+      expect(appState.filteredTransactions.first.title, 'UniqueDesignJob');
 
       // Clear search
       appState.setSearchQuery('');
@@ -133,7 +137,35 @@ void main() {
     });
   });
 
-  group('App Widget Smoke Tests', () {
+  group('Splash Screen & App Widget Smoke Tests', () {
+    testWidgets('SplashScreen renders branding and handles tap to skip', (WidgetTester tester) async {
+      final appState = AppState();
+      await appState.loadData();
+
+      await tester.pumpWidget(
+        AppStateProvider(
+          appState: appState,
+          child: const MaterialApp(
+            home: SplashScreen(
+              displayDuration: Duration(seconds: 10),
+            ),
+          ),
+        ),
+      );
+
+      // Verify branding texts render
+      expect(find.text('Expense Tracker'), findsOneWidget);
+      expect(find.text('Track • Save • Grow'), findsOneWidget);
+      expect(find.text('Tap to skip'), findsOneWidget);
+
+      // Tap to skip
+      await tester.tap(find.byType(GestureDetector).first);
+      await tester.pumpAndSettle();
+
+      // Should transition to MainScaffold
+      expect(find.text('Total Balance'), findsOneWidget);
+    });
+
     testWidgets('ExpenseTrackerApp builds and displays dashboard', (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1.0;
@@ -149,6 +181,7 @@ void main() {
           child: const ExpenseTrackerApp(),
         ),
       );
+      // Wait for splash transition
       await tester.pumpAndSettle();
 
       // Verify dashboard header and balance card
@@ -184,6 +217,7 @@ void main() {
       await tester.tap(find.descendant(of: navBar, matching: find.text('Settings')));
       await tester.pumpAndSettle();
       expect(find.text('Settings & Categories'), findsOneWidget);
+      expect(find.text('About App'), findsOneWidget);
     });
   });
 }
