@@ -90,12 +90,20 @@ class TransactionItem {
   }
 
   factory TransactionItem.fromJson(Map<String, dynamic> json) {
+    DateTime parsedDate = DateTime.now();
+    if (json['date'] != null) {
+      final parsed = DateTime.tryParse(json['date'].toString());
+      if (parsed != null) {
+        parsedDate = parsed;
+      }
+    }
+
     return TransactionItem(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      amount: (json['amount'] as num).toDouble(),
-      date: DateTime.parse(json['date'] as String),
-      categoryId: json['categoryId'] as String,
+      id: json['id'] as String? ?? const Uuid().v4(),
+      title: json['title'] as String? ?? 'Untitled Transaction',
+      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      date: parsedDate,
+      categoryId: json['categoryId'] as String? ?? 'expense_other',
       type: json['type'] == 'income' ? TransactionType.income : TransactionType.expense,
       paymentMethod: PaymentMethod.values.firstWhere(
         (m) => m.name == json['paymentMethod'],

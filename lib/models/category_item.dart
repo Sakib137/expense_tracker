@@ -39,10 +39,10 @@ class CategoryItem {
 
   factory CategoryItem.fromJson(Map<String, dynamic> json) {
     return CategoryItem(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      iconKey: json['iconKey'] as String,
-      colorValue: json['colorValue'] as int,
+      id: json['id'] as String? ?? 'custom_unknown',
+      name: json['name'] as String? ?? 'Custom Category',
+      iconKey: json['iconKey'] as String? ?? 'category',
+      colorValue: json['colorValue'] as int? ?? 0xFF64748B,
       type: json['type'] == 'income' ? CategoryType.income : CategoryType.expense,
       isCustom: json['isCustom'] as bool? ?? false,
     );

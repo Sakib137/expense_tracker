@@ -227,6 +227,18 @@ class AppState extends ChangeNotifier {
 
   double get thisMonthBalance => thisMonthIncome - thisMonthExpenses;
 
+  double getPeriodIncome(AnalyticsPeriod period) {
+    return _getTransactionsForPeriod(period)
+        .where((t) => t.type == TransactionType.income)
+        .fold(0.0, (sum, t) => sum + t.amount);
+  }
+
+  double getPeriodExpenses(AnalyticsPeriod period) {
+    return _getTransactionsForPeriod(period)
+        .where((t) => t.type == TransactionType.expense)
+        .fold(0.0, (sum, t) => sum + t.amount);
+  }
+
   double get savingsRate {
     if (thisMonthIncome <= 0) return 0.0;
     final saved = thisMonthIncome - thisMonthExpenses;
@@ -552,6 +564,11 @@ class AppState extends ChangeNotifier {
 
   Future<void> deleteCategory(String id) async {
     _categories.removeWhere((c) => c.id == id);
+    if (_budgets.categoryBudgets.containsKey(id)) {
+      final updatedBudgets = Map<String, double>.from(_budgets.categoryBudgets)..remove(id);
+      _budgets = _budgets.copyWith(categoryBudgets: updatedBudgets);
+      await _repository.saveBudgets(_budgets);
+    }
     notifyListeners();
     await _repository.saveCategories(_categories);
   }

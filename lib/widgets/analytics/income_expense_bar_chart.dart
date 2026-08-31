@@ -124,7 +124,7 @@ class IncomeExpenseBarChart extends StatelessWidget {
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  horizontalInterval: maxY / 3,
+                  horizontalInterval: max(1.0, maxY / 3),
                   getDrawingHorizontalLine: (value) {
                     return FlLine(
                       color: theme.colorScheme.outline.withValues(alpha: 0.3),

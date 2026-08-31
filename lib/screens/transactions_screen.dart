@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:expense_tracker/state/app_state.dart';
 import 'package:expense_tracker/state/app_state_provider.dart';
@@ -73,11 +74,15 @@ class TransactionsScreen extends StatelessWidget {
   ) async {
     final deleted = await appState.deleteTransaction(transaction.id);
     if (deleted != null && context.mounted) {
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.clearSnackBars();
+
+      final controller = messenger.showSnackBar(
         SnackBar(
           content: Text('Deleted "${transaction.title}"'),
-          duration: const Duration(seconds: 4),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           action: SnackBarAction(
             label: 'Undo',
             textColor: AppColors.incomeLight,
@@ -85,6 +90,12 @@ class TransactionsScreen extends StatelessWidget {
           ),
         ),
       );
+
+      Timer(const Duration(seconds: 3), () {
+        try {
+          controller.close();
+        } catch (_) {}
+      });
     }
   }
 

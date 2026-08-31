@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:expense_tracker/models/transaction_item.dart';
+import 'package:expense_tracker/models/category_item.dart';
 import 'package:expense_tracker/models/budget_item.dart';
 import 'package:expense_tracker/models/user_settings.dart';
 import 'package:expense_tracker/utils/currency_formatter.dart';
@@ -63,6 +64,22 @@ void main() {
       expect(CurrencyFormatter.formatCompact(2500, symbol: '\$'), '\$2.5K');
     });
 
+    test('Resilient JSON parsing on empty/corrupted data', () {
+      final tx = TransactionItem.fromJson({});
+      expect(tx.title, 'Untitled Transaction');
+      expect(tx.amount, 0.0);
+      expect(tx.categoryId, 'expense_other');
+      expect(tx.paymentMethod, PaymentMethod.cash);
+
+      final cat = CategoryItem.fromJson({});
+      expect(cat.id, 'custom_unknown');
+      expect(cat.name, 'Custom Category');
+
+      final budget = BudgetsConfig.fromJson({});
+      expect(budget.overallMonthlyBudget, 2500.0);
+      expect(budget.categoryBudgets, isEmpty);
+    });
+
     test('UserSettings copyWith and JSON roundtrip', () {
       const settings = UserSettings(
         userName: 'Alex',
@@ -85,6 +102,48 @@ void main() {
   });
 
   group('AppState Business Logic Tests', () {
+    test('Period income and expense calculations', () async {
+      final appState = AppState();
+      await appState.loadData();
+
+      final weekIncome = appState.getPeriodIncome(AnalyticsPeriod.thisWeek);
+      final weekExpense = appState.getPeriodExpenses(AnalyticsPeriod.thisWeek);
+      expect(weekIncome, isA<double>());
+      expect(weekExpense, isA<double>());
+
+      final monthIncome = appState.getPeriodIncome(AnalyticsPeriod.thisMonth);
+      final monthExpense = appState.getPeriodExpenses(AnalyticsPeriod.thisMonth);
+      expect(monthIncome, appState.thisMonthIncome);
+      expect(monthExpense, appState.thisMonthExpenses);
+
+      final allIncome = appState.getPeriodIncome(AnalyticsPeriod.allTime);
+      final allExpense = appState.getPeriodExpenses(AnalyticsPeriod.allTime);
+      expect(allIncome, appState.totalIncome);
+      expect(allExpense, appState.totalExpenses);
+    });
+
+    test('Deleting category cleans up category budget mapping', () async {
+      final appState = AppState();
+      await appState.loadData();
+
+      // Add custom category and budget
+      const customCategory = CategoryItem(
+        id: 'test_gym_sub',
+        name: 'Gym Sub',
+        iconKey: 'fitness_center',
+        colorValue: 0xFF10B981,
+        type: CategoryType.expense,
+        isCustom: true,
+      );
+      await appState.addCategory(customCategory);
+      await appState.updateCategoryBudget('test_gym_sub', 150.0);
+      expect(appState.budgets.categoryBudgets['test_gym_sub'], 150.0);
+
+      // Delete custom category
+      await appState.deleteCategory('test_gym_sub');
+      expect(appState.categories.any((c) => c.id == 'test_gym_sub'), isFalse);
+      expect(appState.budgets.categoryBudgets.containsKey('test_gym_sub'), isFalse);
+    });
     test('Initial data loads default categories and seed transactions', () async {
       final appState = AppState();
       await appState.loadData();

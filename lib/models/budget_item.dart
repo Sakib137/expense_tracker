@@ -70,9 +70,12 @@ class BudgetsConfig {
 
   factory BudgetsConfig.fromJson(Map<String, dynamic> json) {
     final rawCategoryBudgets = json['categoryBudgets'] as Map<String, dynamic>? ?? {};
-    final convertedCategoryBudgets = rawCategoryBudgets.map(
-      (key, value) => MapEntry(key, (value as num).toDouble()),
-    );
+    final convertedCategoryBudgets = <String, double>{};
+    for (final entry in rawCategoryBudgets.entries) {
+      if (entry.value is num) {
+        convertedCategoryBudgets[entry.key] = (entry.value as num).toDouble();
+      }
+    }
 
     return BudgetsConfig(
       overallMonthlyBudget: (json['overallMonthlyBudget'] as num?)?.toDouble() ?? 2500.0,

@@ -70,6 +70,8 @@ class _AddEditTransactionSheetState extends State<AddEditTransactionSheet> {
       final available = _getCategoriesForType(newType);
       if (available.isNotEmpty) {
         _selectedCategoryId = available.first.id;
+      } else {
+        _selectedCategoryId = newType == TransactionType.income ? 'salary' : 'expense_other';
       }
     });
   }

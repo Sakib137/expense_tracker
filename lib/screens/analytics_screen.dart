@@ -23,16 +23,9 @@ class AnalyticsScreen extends StatelessWidget {
     final trendPoints = appState.getSpendingTrend(period);
     final insights = appState.financialInsights;
 
-    // Calculate period specific summary
-    double periodIncome = 0;
-    double periodExpense = 0;
-    if (period == AnalyticsPeriod.thisMonth) {
-      periodIncome = appState.thisMonthIncome;
-      periodExpense = appState.thisMonthExpenses;
-    } else {
-      periodIncome = appState.totalIncome;
-      periodExpense = appState.totalExpenses;
-    }
+    // Calculate period specific summary dynamically
+    final periodIncome = appState.getPeriodIncome(period);
+    final periodExpense = appState.getPeriodExpenses(period);
     final netSavings = periodIncome - periodExpense;
     final savingsRate = periodIncome > 0 ? (netSavings / periodIncome) : 0.0;
 
